@@ -13,8 +13,6 @@ static uint32_t i2c_done_pdMS_TICKS = 0;
 
 void i2c_master_Init(void)
 {
-  // CRITICAL: Reduce I2C timeouts to prevent LVGL deadlock during touch operations
-  // Original timeouts: 5000ms and 1000ms were causing UI hangs
   i2c_data_pdMS_TICKS = pdMS_TO_TICKS(10);  // Reduced from 5000ms to 10ms
   i2c_done_pdMS_TICKS = pdMS_TO_TICKS(5);   // Reduced from 1000ms to 5ms
   /*i2c_port 0 init*/

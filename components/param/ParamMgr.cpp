@@ -144,8 +144,9 @@ static esp_console_cmd_t s_param_cmd_struct{
     .help    = "param command: 'list', 'read', 'save', 'erase', 'default', or 'set <name> <value>'",
     .hint    = NULL,
     .func    = &param_cmd,
-    .argtable = &s_param_cmd_args,
-    .context  = NULL,
+    .argtable       = &s_param_cmd_args,
+    .func_w_context = NULL,
+    .context        = NULL,
 };
 
 /****************************************************************************/

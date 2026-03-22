@@ -7,8 +7,12 @@ void lcd_touch_init(void)
   uint8_t data = 0x00;
   ESP_ERROR_CHECK(i2c_write_buff(disp_touch_dev_handle,0x00,&data,1)); //切换正常模式
 }
+
 uint8_t tpGetCoordinates(uint16_t *x,uint16_t *y)
 {
+  if (x == NULL || y == NULL) {
+    return 0;
+  }
   uint8_t GetNum = 0;
   uint8_t data[7] = {0};
   
@@ -18,9 +22,6 @@ uint8_t tpGetCoordinates(uint16_t *x,uint16_t *y)
     // I2C read failed - return no touch detected instead of hanging
     static uint32_t error_count = 0;
     error_count++;
-    // if (error_count % 100 == 0) {  // Log every 100 errors to avoid spam
-    //   ESP_LOGW("touch", "I2C touch read failed: %s (count: %lu)", esp_err_to_name(err), error_count);
-    // }
     return 0;
   }
   

@@ -183,7 +183,6 @@ static void user_encoder_loop_task(void* arg)
 // Deadlock monitoring task - monitors system health and forces recovery
 static void deadlock_monitor_task(void* arg)
 {
-    uint32_t last_lvgl_activity   = esp_timer_get_time() / 1000;
     uint32_t consecutive_warnings = 0;
 
     ESP_LOGI(TAG, "Deadlock monitor started");
@@ -195,7 +194,6 @@ static void deadlock_monitor_task(void* arg)
         // Check if LVGL lock can be acquired (test for deadlock)
         if (ui_lvgl_lock(50)) // Short timeout
         {
-            last_lvgl_activity   = current_time;
             consecutive_warnings = 0;
             ui_lvgl_unlock();
         }
@@ -251,8 +249,8 @@ extern "C" void app_main(void)
 
     // initialize user encoder
     user_encoder_init();
-    xTaskCreate(ui_update_task, "ui_update_task", 8 * 1024, NULL, 2, NULL);
-    xTaskCreate(user_encoder_loop_task, "user_encoder_loop_task", 8 * 1024, NULL, 3, NULL);
+    xTaskCreate(ui_update_task, "ui_update_task", 8 * 1024, NULL, 5, NULL);
+    xTaskCreate(user_encoder_loop_task, "user_encoder_loop_task", 8 * 1024, NULL, 2, NULL);
     xTaskCreate(deadlock_monitor_task, "deadlock_monitor", 8 * 1024, NULL, 1, NULL);
 
     params::ParamMgr::getInstance().listAll();

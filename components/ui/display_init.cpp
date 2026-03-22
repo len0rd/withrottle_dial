@@ -240,24 +240,14 @@ static void example_lvgl_flush_cb(lv_disp_drv_t* drv, const lv_area_t* area, lv_
     static uint32_t flush_count = 0;
     flush_count++;
 
-    ESP_LOGD(TAG, "Flush callback #%lu: area(%d,%d)-(%d,%d)", flush_count, area->x1, area->y1,
-             area->x2, area->y2);
-
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
     const int              offsetx1     = area->x1;
     const int              offsetx2     = area->x2;
     const int              offsety1     = area->y1;
     const int              offsety2     = area->y2;
 
-    // copy a buffer's content to a specific area of the display
-    ESP_LOGD(TAG, "About to call esp_lcd_panel_draw_bitmap...");
     esp_err_t ret = esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1,
                                               offsety2 + 1, color_map);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "Display draw failed: %s", esp_err_to_name(ret));
-    }
-    ESP_LOGD(TAG, "Display draw completed");
 }
 
 void example_lvgl_rounder_cb(struct _lv_disp_drv_t* disp_drv, lv_area_t* area)
@@ -276,38 +266,43 @@ void example_lvgl_rounder_cb(struct _lv_disp_drv_t* disp_drv, lv_area_t* area)
     area->y2 = ((y2 >> 1) << 1) + 1;
 }
 
-#if EXAMPLE_USE_TOUCH
-
-// Cached touch state - updated by separate task, read by LVGL callback
-static struct
+// Touch event structure for queue communication
+typedef struct
 {
-    SemaphoreHandle_t mutex;
-    uint16_t          x, y;
-    lv_indev_state_t  state;
-    bool              valid;
-    uint32_t          last_update;
-} cached_touch = {0};
+    uint16_t         x;
+    uint16_t         y;
+    lv_indev_state_t state;
+    bool             valid;
+    uint32_t         lvgl_ts;
+} touch_event_t;
+
+// Touch event queue - non-blocking communication from touch_reader_task to callback
+static QueueHandle_t touch_queue = NULL;
 
 static void touch_reader_task(void* arg)
 {
-    uint32_t         touch_count  = 0;
-    uint32_t         failed_reads = 0;
-    uint32_t         last_valid_x = 0, last_valid_y = 0;
-    lv_indev_state_t last_valid_state = LV_INDEV_STATE_RELEASED;
+    uint32_t touch_count  = 0;
+    uint32_t failed_reads = 0;
+    uint32_t last_valid_x = 0, last_valid_y = 0;
+    uint32_t cycles_count    = 0;
+    uint32_t last_print_time = esp_timer_get_time() / 1000;
 
     ESP_LOGI(TAG, "Touch reader task started");
 
     while (1)
     {
-        uint16_t tp_x = 0, tp_y = 0;
+        touch_event_t touch_event = {};
+
         uint32_t start_time = esp_timer_get_time() / 1000;
 
         // Perform I2C touch read WITHOUT holding LVGL mutex
-        uint8_t win = tpGetCoordinates(&tp_x, &tp_y);
+        touch_event.lvgl_ts = lv_tick_get();
+        uint8_t win         = tpGetCoordinates(&touch_event.x, &touch_event.y);
 
         uint32_t end_time = esp_timer_get_time() / 1000;
         uint32_t duration = end_time - start_time;
         touch_count++;
+        cycles_count++;
 
         // Log slow I2C operations
         if (duration > 10)
@@ -316,85 +311,75 @@ static void touch_reader_task(void* arg)
             failed_reads++;
         }
 
-        // Update cached touch state atomically with timeout protection
-        if (xSemaphoreTake(cached_touch.mutex, pdMS_TO_TICKS(10)) == pdTRUE)
+        // Prepare touch event
+
+        if (win && duration < 50)
+        { // Valid reading
+            failed_reads = 0;
+            if (touch_event.x > EXAMPLE_LCD_H_RES)
+                touch_event.x = EXAMPLE_LCD_H_RES;
+            if (touch_event.y > EXAMPLE_LCD_V_RES)
+                touch_event.y = EXAMPLE_LCD_V_RES;
+
+            touch_event.state = LV_INDEV_STATE_PRESSED;
+            touch_event.valid = true;
+            last_valid_x      = touch_event.x;
+            last_valid_y      = touch_event.y;
+        }
+        else
         {
-            if (win && duration < 50)
-            { // Valid reading
-                failed_reads = 0;
-#ifdef EXAMPLE_Rotate_90
-                cached_touch.x = tp_y;
-                cached_touch.y = (EXAMPLE_LCD_V_RES - tp_x);
-#else
-                cached_touch.x = tp_x;
-                cached_touch.y = tp_y;
-#endif
-                if (cached_touch.x > EXAMPLE_LCD_H_RES)
-                    cached_touch.x = EXAMPLE_LCD_H_RES;
-                if (cached_touch.y > EXAMPLE_LCD_V_RES)
-                    cached_touch.y = EXAMPLE_LCD_V_RES;
+            // No touch or failed read
+            touch_event.x     = last_valid_x;
+            touch_event.y     = last_valid_y;
+            touch_event.state = LV_INDEV_STATE_RELEASED;
+            touch_event.valid = true;
+        }
 
-                cached_touch.state = LV_INDEV_STATE_PRESSED;
-                last_valid_x       = cached_touch.x;
-                last_valid_y       = cached_touch.y;
-                last_valid_state   = LV_INDEV_STATE_PRESSED;
-            }
-            else
-            {
-                // No touch or failed read
-                cached_touch.x     = last_valid_x;
-                cached_touch.y     = last_valid_y;
-                cached_touch.state = LV_INDEV_STATE_RELEASED;
-                last_valid_state   = LV_INDEV_STATE_RELEASED;
-            }
+        // Handle persistent failures
+        if (failed_reads > 10)
+        {
+            ESP_LOGW(TAG, "Touch interface unstable (%lu failures) - using fallback", failed_reads);
+            touch_event.state = LV_INDEV_STATE_RELEASED;
+            touch_event.valid = false;
+            failed_reads      = 0;
+        }
 
-            // Handle persistent failures
-            if (failed_reads > 10)
-            {
-                ESP_LOGW(TAG, "Touch interface unstable (%lu failures) - using fallback",
-                         failed_reads);
-                cached_touch.state = LV_INDEV_STATE_RELEASED;
-                failed_reads       = 0;
-            }
-
-            cached_touch.valid       = true;
-            cached_touch.last_update = esp_timer_get_time() / 1000;
-            xSemaphoreGive(cached_touch.mutex);
+        // Send touch event to queue (non-blocking)
+        // If queue is full, overwrite oldest entry
+        if (xQueueSend(touch_queue, &touch_event, 0) != pdTRUE)
+        {
+            // Queue full - remove oldest and add new
+            touch_event_t dummy;
+            xQueueReceive(touch_queue, &dummy, 0);
+            xQueueSend(touch_queue, &touch_event, 0);
         }
 
         vTaskDelay(pdMS_TO_TICKS(20)); // Read every 20ms
     }
 }
 
-static void example_lvgl_touch_cb(lv_indev_drv_t* drv, lv_indev_data_t* data)
+static void screen_lvgl_touch_cb(lv_indev_drv_t* drv, lv_indev_data_t* data)
 {
-    // Fast, non-blocking read from cached touch data
-    if (xSemaphoreTake(cached_touch.mutex, pdMS_TO_TICKS(1)) == pdTRUE)
+    static touch_event_t last_event = {0, 0, LV_INDEV_STATE_RELEASED, true};
+    touch_event_t        current_event;
+
+    // Try to get latest touch event from queue
+    if (xQueueReceive(touch_queue, &current_event, 0) == pdTRUE)
     {
-        if (cached_touch.valid)
-        {
-            data->point.x = cached_touch.x;
-            data->point.y = cached_touch.y;
-            data->state   = cached_touch.state;
-        }
-        else
-        {
-            // Fallback if cache not yet initialized
-            data->point.x = 0;
-            data->point.y = 0;
-            data->state   = LV_INDEV_STATE_RELEASED;
-        }
-        xSemaphoreGive(cached_touch.mutex);
+        last_event = current_event;
+        // Check if queue has more events - tell LVGL to call us again immediately
+        data->continue_reading = (uxQueueMessagesWaiting(touch_queue) > 0);
     }
     else
     {
-        // If mutex timeout, use safe defaults
-        data->point.x = 0;
-        data->point.y = 0;
-        data->state   = LV_INDEV_STATE_RELEASED;
+        // default to released if unable to retrieve new data
+        last_event.state = LV_INDEV_STATE_RELEASED;
     }
+
+    data->point.x = last_event.x;
+    data->point.y = last_event.y;
+    data->state   = last_event.state;
 }
-#endif
 
 static void example_increase_lvgl_tick(void* arg)
 {
@@ -473,11 +458,7 @@ static void example_lvgl_port_task(void* arg)
         }
         else
         {
-            lock_failures++;
-            if (lock_failures % 50 == 0) // Log every 5 seconds (50 * 100ms)
-            {
-                ESP_LOGW(TAG, "LVGL task: Failed to acquire lock for %lu failures", lock_failures);
-            }
+            task_delay_ms = EXAMPLE_LVGL_TASK_MIN_DELAY_MS;
         }
 
         if (task_delay_ms > EXAMPLE_LVGL_TASK_MAX_DELAY_MS)
@@ -531,13 +512,12 @@ void display_init(void)
     ESP_ERROR_CHECK(
         esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t) LCD_HOST, &io_config, &io_handle));
 
-    esp_lcd_panel_handle_t           panel_handle = NULL;
-    const esp_lcd_panel_dev_config_t panel_config = {
-        .reset_gpio_num = EXAMPLE_PIN_NUM_LCD_RST,
-        .rgb_ele_order  = LCD_RGB_ELEMENT_ORDER_RGB,
-        .bits_per_pixel = LCD_BIT_PER_PIXEL,
-        .vendor_config  = &vendor_config,
-    };
+    esp_lcd_panel_handle_t     panel_handle = NULL;
+    esp_lcd_panel_dev_config_t panel_config = {};
+    panel_config.reset_gpio_num             = EXAMPLE_PIN_NUM_LCD_RST;
+    panel_config.rgb_ele_order              = LCD_RGB_ELEMENT_ORDER_RGB;
+    panel_config.bits_per_pixel             = LCD_BIT_PER_PIXEL;
+    panel_config.vendor_config              = &vendor_config;
     ESP_LOGI(TAG, "Install SH8601 panel driver");
     ESP_ERROR_CHECK(esp_lcd_new_panel_sh8601(io_handle, &panel_config, &panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
@@ -574,34 +554,34 @@ void display_init(void)
 
     ESP_LOGI(TAG, "Install LVGL tick timer");
     //Tick interface for LVGL (using esp_timer to generate 2ms periodic event)
-    const esp_timer_create_args_t lvgl_tick_timer_args = {.callback = &example_increase_lvgl_tick,
-                                                          .name     = "lvgl_tick"};
-    esp_timer_handle_t            lvgl_tick_timer      = NULL;
+    const esp_timer_create_args_t lvgl_tick_timer_args = {
+        .callback              = &example_increase_lvgl_tick,
+        .arg                   = NULL,
+        .dispatch_method       = ESP_TIMER_TASK,
+        .name                  = "lvgl_tick",
+        .skip_unhandled_events = true,
+    };
+    esp_timer_handle_t lvgl_tick_timer = NULL;
     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, EXAMPLE_LVGL_TICK_PERIOD_MS * 1000));
 
-#if EXAMPLE_USE_TOUCH
+    // setup reading touch sensor
     ESP_LOGI(TAG, "Registering touch input device...");
     static lv_indev_drv_t indev_drv; // Input device driver (Touch)
     lv_indev_drv_init(&indev_drv);
     indev_drv.type    = LV_INDEV_TYPE_POINTER;
     indev_drv.disp    = disp;
-    indev_drv.read_cb = example_lvgl_touch_cb;
+    indev_drv.read_cb = screen_lvgl_touch_cb;
     lv_indev_drv_register(&indev_drv);
     ESP_LOGI(TAG, "Touch input device registered");
 
-    // Initialize cached touch data and start background touch reader
-    cached_touch.mutex = xSemaphoreCreateMutex();
-    assert(cached_touch.mutex);
-    cached_touch.valid = false;
-    cached_touch.x     = 0;
-    cached_touch.y     = 0;
-    cached_touch.state = LV_INDEV_STATE_RELEASED;
+    // Initialize touch event queue for non-blocking communication
+    touch_queue = xQueueCreate(3, sizeof(touch_event_t)); // Queue depth of 3 touch events
+    assert(touch_queue);
 
     // Start touch reader task with priority between UI tasks and LVGL
     xTaskCreate(touch_reader_task, "touch_reader", 6 * 1024, NULL, 4, NULL);
     ESP_LOGI(TAG, "Touch reader task started");
-#endif
 
     ui_sem = xSemaphoreCreateMutex();
     assert(ui_sem);

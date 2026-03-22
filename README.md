@@ -1,1 +1,1 @@
-# WiThrottle Knob
+# WiThrottle dial

@@ -447,7 +447,7 @@
                       {
                         "nid": 1000370,
                         "strtype": "CHANGE SCREEN/Speed",
-                        "integer": 500,
+                        "integer": 200,
                         "InheritedType": 6
                       },
                       {
@@ -904,7 +904,7 @@
                       {
                         "nid": 1000394,
                         "strtype": "CHANGE SCREEN/Speed",
-                        "integer": 500,
+                        "integer": 200,
                         "InheritedType": 6
                       },
                       {
@@ -4299,7 +4299,7 @@
     "custom_variable_prefix": "uic",
     "separate_screen_save": false,
     "hierarchy_state_save": false,
-    "backup_cnt": 53,
+    "backup_cnt": 55,
     "autosave_cnt": 0,
     "group_color_cnt": 2,
     "imagebytearrayprefix": "",
