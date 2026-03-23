@@ -31,7 +31,7 @@ void ui_event_Settings_Back_Btn(lv_event_t * e)
     lv_event_code_t event_code = lv_event_get_code(e);
 
     if(event_code == LV_EVENT_CLICKED) {
-        _ui_screen_change(&ui_Main_Screen, LV_SCR_LOAD_ANIM_MOVE_BOTTOM, 500, 0, &ui_Main_Screen_screen_init);
+        _ui_screen_change(&ui_Main_Screen, LV_SCR_LOAD_ANIM_MOVE_BOTTOM, 200, 0, &ui_Main_Screen_screen_init);
     }
 }
 

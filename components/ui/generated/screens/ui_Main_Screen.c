@@ -21,7 +21,7 @@ void ui_event_Select_Train_Btn(lv_event_t * e)
     lv_event_code_t event_code = lv_event_get_code(e);
 
     if(event_code == LV_EVENT_CLICKED) {
-        _ui_screen_change(&ui_Select_Train_Screen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 500, 0, &ui_Select_Train_Screen_screen_init);
+        _ui_screen_change(&ui_Select_Train_Screen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 0, &ui_Select_Train_Screen_screen_init);
     }
 }
 
@@ -30,7 +30,7 @@ void ui_event_Settings_Btn(lv_event_t * e)
     lv_event_code_t event_code = lv_event_get_code(e);
 
     if(event_code == LV_EVENT_CLICKED) {
-        _ui_screen_change(&ui_Settings_Screen, LV_SCR_LOAD_ANIM_MOVE_TOP, 500, 0, &ui_Settings_Screen_screen_init);
+        _ui_screen_change(&ui_Settings_Screen, LV_SCR_LOAD_ANIM_MOVE_TOP, 200, 0, &ui_Settings_Screen_screen_init);
     }
 }
 
