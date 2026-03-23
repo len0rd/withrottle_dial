@@ -11,9 +11,9 @@
 
 //  DISP
 // The pixel number in horizontal and vertical
-#define EXAMPLE_LCD_H_RES 360
-#define EXAMPLE_LCD_V_RES 360
-#define EXAMPLE_LVGL_BUF_HEIGHT (EXAMPLE_LCD_V_RES / 10)
+#define LCD_H_RES 360
+#define LCD_V_RES 360
+#define LVGL_BUF_HEIGHT (LCD_V_RES / 30)
 
 #define EXAMPLE_PIN_NUM_LCD_CS (gpio_num_t) 14
 #define EXAMPLE_PIN_NUM_LCD_PCLK (gpio_num_t) 13

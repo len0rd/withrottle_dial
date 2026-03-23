@@ -4303,7 +4303,7 @@
     "autosave_cnt": 0,
     "group_color_cnt": 2,
     "imagebytearrayprefix": "",
-    "lvgl_version": "8.3.11",
+    "lvgl_version": "9.1.0",
     "callfuncsexport": "C_FILE",
     "imageexport": "SOURCE",
     "lvgl_include_path": "",

@@ -227,43 +227,33 @@ static const sh8601_lcd_init_cmd_t lcd_init_cmds[] = {
 #endif
 };
 
-static bool example_notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t      panel_io,
-                                            esp_lcd_panel_io_event_data_t* edata, void* user_ctx)
-{
-    lv_disp_drv_t* disp_driver = (lv_disp_drv_t*) user_ctx;
-    lv_disp_flush_ready(disp_driver);
-    return false;
-}
-
-static void example_lvgl_flush_cb(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t* color_map)
+static void lvgl_flush_cb(lv_display_t* disp, const lv_area_t* area, uint8_t* px_map)
 {
     static uint32_t flush_count = 0;
     flush_count++;
 
-    esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
+    esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) lv_display_get_user_data(disp);
     const int              offsetx1     = area->x1;
     const int              offsetx2     = area->x2;
     const int              offsety1     = area->y1;
     const int              offsety2     = area->y2;
 
-    esp_err_t ret = esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1,
-                                              offsety2 + 1, color_map);
+    esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, px_map);
+
+    // always call ready even if draw failed
+    lv_display_flush_ready(disp);
 }
 
-void example_lvgl_rounder_cb(struct _lv_disp_drv_t* disp_drv, lv_area_t* area)
+static void lvgl_rounder_cb(lv_event_t* e)
 {
-    uint16_t x1 = area->x1;
-    uint16_t x2 = area->x2;
+    lv_area_t* area = (lv_area_t*) lv_event_get_param(e);
 
-    uint16_t y1 = area->y1;
-    uint16_t y2 = area->y2;
-
-    // round the start of coordinate down to the nearest 2M number
-    area->x1 = (x1 >> 1) << 1;
-    area->y1 = (y1 >> 1) << 1;
-    // round the end of coordinate up to the nearest 2N+1 number
-    area->x2 = ((x2 >> 1) << 1) + 1;
-    area->y2 = ((y2 >> 1) << 1) + 1;
+    // Round the start of coordinate down to the nearest 2M number
+    area->x1 = (area->x1 >> 1) << 1;
+    area->y1 = (area->y1 >> 1) << 1;
+    // Round the end of coordinate up to the nearest 2N+1 number
+    area->x2 = ((area->x2 >> 1) << 1) + 1;
+    area->y2 = ((area->y2 >> 1) << 1) + 1;
 }
 
 // Touch event structure for queue communication
@@ -284,8 +274,7 @@ static void touch_reader_task(void* arg)
     uint32_t touch_count  = 0;
     uint32_t failed_reads = 0;
     uint32_t last_valid_x = 0, last_valid_y = 0;
-    uint32_t cycles_count    = 0;
-    uint32_t last_print_time = esp_timer_get_time() / 1000;
+    uint32_t cycles_count = 0;
 
     ESP_LOGI(TAG, "Touch reader task started");
 
@@ -316,10 +305,10 @@ static void touch_reader_task(void* arg)
         if (win && duration < 50)
         { // Valid reading
             failed_reads = 0;
-            if (touch_event.x > EXAMPLE_LCD_H_RES)
-                touch_event.x = EXAMPLE_LCD_H_RES;
-            if (touch_event.y > EXAMPLE_LCD_V_RES)
-                touch_event.y = EXAMPLE_LCD_V_RES;
+            if (touch_event.x > LCD_H_RES)
+                touch_event.x = LCD_H_RES;
+            if (touch_event.y > LCD_V_RES)
+                touch_event.y = LCD_V_RES;
 
             touch_event.state = LV_INDEV_STATE_PRESSED;
             touch_event.valid = true;
@@ -358,10 +347,14 @@ static void touch_reader_task(void* arg)
     }
 }
 
-static void screen_lvgl_touch_cb(lv_indev_drv_t* drv, lv_indev_data_t* data)
+static void screen_lvgl_touch_cb(lv_indev_t* drv, lv_indev_data_t* data)
 {
-    static touch_event_t last_event = {0, 0, LV_INDEV_STATE_RELEASED, true};
-    touch_event_t        current_event;
+    static touch_event_t last_event = {};
+    last_event.x                    = 0;
+    last_event.y                    = 0;
+    last_event.state                = LV_INDEV_STATE_RELEASED;
+    last_event.valid                = true;
+    touch_event_t current_event;
 
     // Try to get latest touch event from queue
     if (xQueueReceive(touch_queue, &current_event, 0) == pdTRUE)
@@ -376,9 +369,10 @@ static void screen_lvgl_touch_cb(lv_indev_drv_t* drv, lv_indev_data_t* data)
         last_event.state = LV_INDEV_STATE_RELEASED;
     }
 
-    data->point.x = last_event.x;
-    data->point.y = last_event.y;
-    data->state   = last_event.state;
+    data->point.x   = last_event.x;
+    data->point.y   = last_event.y;
+    data->state     = last_event.state;
+    data->timestamp = last_event.lvgl_ts;
 }
 
 static void example_increase_lvgl_tick(void* arg)
@@ -394,7 +388,7 @@ static uint32_t          ui_sem_last_lock_time = 0;
 
 bool ui_lvgl_lock(int timeout_ms)
 {
-    assert(ui_sem && "bsp_display_start must be called first");
+    assert(ui_sem && "display_init must be called first");
 
     const TickType_t timeout_ticks = (timeout_ms == -1) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
     uint32_t         start_time    = esp_timer_get_time() / 1000;
@@ -475,8 +469,7 @@ static void example_lvgl_port_task(void* arg)
 
 void display_init(void)
 {
-    static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
-    static lv_disp_drv_t      disp_drv; // contains callback functions
+    static lv_display_t* s_display = NULL;
 
     ESP_LOGI(TAG, "Starting display initialization");
 
@@ -492,14 +485,14 @@ void display_init(void)
         .sclk_io_num     = EXAMPLE_PIN_NUM_LCD_PCLK,
         .data2_io_num    = EXAMPLE_PIN_NUM_LCD_DATA2,
         .data3_io_num    = EXAMPLE_PIN_NUM_LCD_DATA3,
-        .max_transfer_sz = EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * sizeof(uint16_t),
+        .max_transfer_sz = LCD_H_RES * LCD_V_RES * sizeof(uint16_t),
     };
     ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
     ESP_LOGI(TAG, "Install panel IO");
     esp_lcd_panel_io_handle_t           io_handle = NULL;
-    const esp_lcd_panel_io_spi_config_t io_config = SH8601_PANEL_IO_QSPI_CONFIG(
-        EXAMPLE_PIN_NUM_LCD_CS, example_notify_lvgl_flush_ready, &disp_drv);
+    const esp_lcd_panel_io_spi_config_t io_config =
+        SH8601_PANEL_IO_QSPI_CONFIG(EXAMPLE_PIN_NUM_LCD_CS, NULL, NULL);
     sh8601_vendor_config_t vendor_config = {
         .init_cmds      = lcd_init_cmds,
         .init_cmds_size = sizeof(lcd_init_cmds) / sizeof(lcd_init_cmds[0]),
@@ -523,34 +516,39 @@ void display_init(void)
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
     i2c_master_Init(); //I2C_Init
-#if EXAMPLE_USE_TOUCH
+
     ESP_LOGI(TAG, "Touch interface enabled - initializing...");
     lcd_touch_init();
     ESP_LOGI(TAG, "Touch interface initialized");
-#endif
 
-    // ESP_LOGI(TAG, "Initialize LVGL library");
+    ESP_LOGI(TAG, "Initialize LVGL library");
     lv_init();
-    //alloc draw buffers used by LVGL
-    //it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
-    lv_color_t* buf1 = (lv_color_t*) heap_caps_malloc(
-        EXAMPLE_LCD_H_RES * EXAMPLE_LVGL_BUF_HEIGHT * sizeof(lv_color_t), MALLOC_CAP_DMA);
-    assert(buf1);
-    lv_color_t* buf2 = (lv_color_t*) heap_caps_malloc(
-        EXAMPLE_LCD_H_RES * EXAMPLE_LVGL_BUF_HEIGHT * sizeof(lv_color_t), MALLOC_CAP_DMA);
-    assert(buf2);
-    //initialize LVGL draw buffers
-    lv_disp_draw_buf_init(&disp_buf, buf1, buf2, EXAMPLE_LCD_H_RES * EXAMPLE_LVGL_BUF_HEIGHT);
 
-    ESP_LOGI(TAG, "Register display driver to LVGL");
-    lv_disp_drv_init(&disp_drv);
-    disp_drv.hor_res    = EXAMPLE_LCD_H_RES;
-    disp_drv.ver_res    = EXAMPLE_LCD_V_RES;
-    disp_drv.flush_cb   = example_lvgl_flush_cb;
-    disp_drv.rounder_cb = example_lvgl_rounder_cb;
-    disp_drv.draw_buf   = &disp_buf;
-    disp_drv.user_data  = panel_handle;
-    lv_disp_t* disp     = lv_disp_drv_register(&disp_drv);
+    s_display = lv_display_create(LCD_H_RES, LCD_V_RES);
+    if (!s_display)
+    {
+        ESP_LOGE(TAG, "Failed to create LVGL display");
+        return;
+    }
+
+    // Statically allocate draw buffers in DMA-capable internal RAM
+    // Note: PSRAM cannot be used with SPI LCD DMA transfers
+    static constexpr size_t BUFF_SIZE = LCD_H_RES * LVGL_BUF_HEIGHT * sizeof(lv_color_t);
+    static DMA_ATTR uint8_t buf1[BUFF_SIZE];
+    static DMA_ATTR uint8_t buf2[BUFF_SIZE];
+
+    // size_t buf_size = sizeof(buf1);
+    // ESP_LOGI(TAG, "Using static DMA buffers: %zu bytes each (total %zu bytes)", buf_size,
+    //          buf_size * 2);
+
+    // Clear the buffers
+    memset(buf1, 0, BUFF_SIZE);
+    memset(buf2, 0, BUFF_SIZE);
+
+    lv_display_set_buffers(s_display, buf1, buf2, BUFF_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
+    lv_display_set_flush_cb(s_display, lvgl_flush_cb);
+    lv_display_set_user_data(s_display, panel_handle);
+    lv_display_add_event_cb(s_display, lvgl_rounder_cb, LV_EVENT_INVALIDATE_AREA, NULL);
 
     ESP_LOGI(TAG, "Install LVGL tick timer");
     //Tick interface for LVGL (using esp_timer to generate 2ms periodic event)
@@ -567,13 +565,14 @@ void display_init(void)
 
     // setup reading touch sensor
     ESP_LOGI(TAG, "Registering touch input device...");
-    static lv_indev_drv_t indev_drv; // Input device driver (Touch)
-    lv_indev_drv_init(&indev_drv);
-    indev_drv.type    = LV_INDEV_TYPE_POINTER;
-    indev_drv.disp    = disp;
-    indev_drv.read_cb = screen_lvgl_touch_cb;
-    lv_indev_drv_register(&indev_drv);
-    ESP_LOGI(TAG, "Touch input device registered");
+    static lv_indev_t* s_touch_indev = lv_indev_create();
+    if (!s_touch_indev)
+    {
+        ESP_LOGE(TAG, "Failed to create LVGL touch input device");
+        return;
+    }
+    lv_indev_set_type(s_touch_indev, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(s_touch_indev, screen_lvgl_touch_cb);
 
     // Initialize touch event queue for non-blocking communication
     touch_queue = xQueueCreate(3, sizeof(touch_event_t)); // Queue depth of 3 touch events
