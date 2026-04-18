@@ -27,6 +27,12 @@
 #include "wifi.h"
 #include <atomic>
 
+static constexpr bool is_screen_scrollable(lv_obj_t* active_screen)
+{
+    return active_screen != nullptr &&
+           ((active_screen == ui_Select_Train_Screen) || (active_screen == ui_Train_Main_Control));
+}
+
 // Function to update settings screen values
 void update_settings_screen_values()
 {
@@ -78,7 +84,29 @@ static void ui_update_task(void* arg)
                 scroll_accumulator = 0;
 
                 if (act_scr == ui_Select_Train_Screen)
+                {
                     lv_obj_scroll_by(ui_Train_Select_Container, 0, scroll_amount, LV_ANIM_ON);
+                }
+                else if (act_scr == ui_Train_Main_Control)
+                {
+                    // Update throttle arc based on scroll
+                    int16_t current_value = lv_arc_get_value(ui_Train_Main_Throttle);
+                    int16_t min_value     = lv_arc_get_min_value(ui_Train_Main_Throttle);
+                    int16_t max_value     = lv_arc_get_max_value(ui_Train_Main_Throttle);
+
+                    // Convert scroll to throttle steps (divide to reduce sensitivity)
+                    int16_t throttle_delta = -1 * (scroll_amount / 25);
+                    int16_t new_value      = current_value + throttle_delta;
+
+                    // Clamp to valid range
+                    if (new_value < min_value)
+                        new_value = min_value;
+                    if (new_value > max_value)
+                        new_value = max_value;
+
+                    // Update the arc value
+                    lv_arc_set_value(ui_Train_Main_Throttle, new_value);
+                }
             }
 
             uint32_t work_time = (esp_timer_get_time() / 1000) - lock_acquired_time;
@@ -131,7 +159,7 @@ static void user_encoder_loop_task(void* arg)
             xEventGroupWaitBits(knob_even_, BIT_EVEN_ALL, pdTRUE, pdFALSE, pdMS_TO_TICKS(5000));
 
         // Thread-safe access to LVGL - get active screen with mutex
-        lv_obj_t* act_scr    = NULL;
+        lv_obj_t* act_scr    = nullptr;
         uint32_t  start_time = esp_timer_get_time() / 1000;
 
         if (ui_lvgl_lock(100)) // Increased timeout from 50ms to 100ms
@@ -158,21 +186,13 @@ static void user_encoder_loop_task(void* arg)
             continue; // Skip this iteration if we can't get the screen
         }
 
-        // counter-clockwise encoder tick
-        if (READ_BIT(even, 0))
+        if (is_screen_scrollable(act_scr))
         {
-            ESP_LOGI(TAG, "CCW scroll");
-            if (act_scr == ui_Select_Train_Screen)
+            if (READ_BIT(even, 0))
             {
                 scroll_accumulator += 50;
             }
-        }
-
-        // clockwise encoder tick
-        if (READ_BIT(even, 1))
-        {
-            ESP_LOGI(TAG, "CW scroll");
-            if (act_scr == ui_Select_Train_Screen)
+            if (READ_BIT(even, 1))
             {
                 scroll_accumulator -= 50;
             }
@@ -228,8 +248,8 @@ static void deadlock_monitor_task(void* arg)
 
 extern "C" void app_main(void)
 {
-    ConsoleCommandsInit();
-    espwifi_Init();
+    // ConsoleCommandsInit();
+    // espwifi_Init();
     ESP_LOGI(TAG, "Starting WiThrottle Knob BUILD 4 \n");
 
     display_init();
@@ -253,7 +273,7 @@ extern "C" void app_main(void)
     xTaskCreate(user_encoder_loop_task, "user_encoder_loop_task", 8 * 1024, NULL, 2, NULL);
     xTaskCreate(deadlock_monitor_task, "deadlock_monitor", 8 * 1024, NULL, 1, NULL);
 
-    params::ParamMgr::getInstance().listAll();
+    // params::ParamMgr::getInstance().listAll();
 
     ESP_LOGI(TAG, "App setup complete, deleting app_main task");
 

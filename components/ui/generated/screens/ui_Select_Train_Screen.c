@@ -40,9 +40,7 @@ void ui_Select_Train_Screen_screen_init(void)
     ui_Train_Select_Container = lv_obj_create(ui_Select_Train_Screen);
     lv_obj_remove_style_all(ui_Train_Select_Container);
     lv_obj_set_width(ui_Train_Select_Container, 360);
-    lv_obj_set_height(ui_Train_Select_Container, 310);
-    lv_obj_set_x(ui_Train_Select_Container, 0);
-    lv_obj_set_y(ui_Train_Select_Container, 50);
+    lv_obj_set_height(ui_Train_Select_Container, 360);
     lv_obj_set_align(ui_Train_Select_Container, LV_ALIGN_CENTER);
     lv_obj_set_flex_flow(ui_Train_Select_Container, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(ui_Train_Select_Container, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
