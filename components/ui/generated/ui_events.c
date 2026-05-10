@@ -9,3 +9,8 @@ void onStopClicked(lv_event_t * e)
 {
 	// Your code here
 }
+
+void onDirClicked(lv_event_t * e)
+{
+	// Your code here
+}

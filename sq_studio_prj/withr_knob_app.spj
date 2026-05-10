@@ -6603,7 +6603,7 @@
                   {
                     "nid": 1000513,
                     "strtype": "_event/name",
-                    "strval": "OnStopClicked",
+                    "strval": "onDirClicked",
                     "InheritedType": 10
                   },
                   {
@@ -6644,7 +6644,7 @@
                       {
                         "nid": 1000520,
                         "strtype": "CALL FUNCTION/Function_name",
-                        "strval": "onStopClicked",
+                        "strval": "onDirClicked",
                         "InheritedType": 10
                       },
                       {
@@ -6850,7 +6850,7 @@
     "custom_variable_prefix": "uic",
     "separate_screen_save": false,
     "hierarchy_state_save": false,
-    "backup_cnt": 75,
+    "backup_cnt": 76,
     "autosave_cnt": 0,
     "group_color_cnt": 2,
     "imagebytearrayprefix": "",

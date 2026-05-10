@@ -1,5 +1,9 @@
 #pragma once
+
 #include <stdbool.h>
+#include <optional>
+#include <string>
+#include "WiThrottleProtocol.h"
 
 namespace withr
 {
@@ -8,21 +12,30 @@ namespace withr
 void client_start(void);
 
 // Thread-safe speed/direction control (call from UI task).
-// speed: 0-126
-void set_speed(int speed);
+// speed as a percentage [0,100]
+void set_speed(uint8_t percent);
 
-constexpr int percent_to_speed(int percent)
-{
-    return (percent * 126) / 100;
-}
+/// @brief Get the current speed of this throttle as a percent [0, 100]
+/// nullopt if not currently connected
+std::optional<uint8_t> get_speed();
+
+// get throttles current direction
+// nullopt if not currently connected
+std::optional<Direction> get_direction();
 
 // Send an emergency stop.
 void emergency_stop(void);
 
-// fwd: true = Forward, false = Reverse
-void set_direction(bool fwd);
+// set throttle direction
+void set_direction(Direction dir);
 
 // Returns true if connected and loco is acquired.
 bool is_connected(void);
+
+/// Return the string name of the first locomotive attached to the global throttle
+std::optional<std::string> get_loco_name();
+
+/// @brief Get the connection URL Withrottle is using/trying for the Withrottle server
+std::string get_server_url();
 
 } // namespace withr

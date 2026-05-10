@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 void onStopClicked(lv_event_t * e);
+void onDirClicked(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

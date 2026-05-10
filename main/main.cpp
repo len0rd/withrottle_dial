@@ -29,9 +29,6 @@
 #include "withrottle_client.h"
 #include <atomic>
 
-/// NVS parameter for WiThrottle URL
-params::Param<std::string> s_withr_url{"withr_url", std::string("")};
-
 static constexpr bool is_screen_scrollable(lv_obj_t* active_screen)
 {
     return active_screen != nullptr &&
@@ -54,10 +51,35 @@ void update_settings_screen_values()
     }
     if (uic_withrottle_url_value != NULL)
     {
-        std::string withrottle_url = s_withr_url.get();
+        std::string withrottle_url = withr::get_server_url();
         if (!withrottle_url.empty())
         {
             lv_label_set_text(uic_withrottle_url_value, withrottle_url.c_str());
+        }
+    }
+}
+
+/// Update UI state of the main train control page
+#define DIR_FWD_LABEL "dir >"
+#define DIR_REV_LABEL "< dir"
+void update_main_control_state()
+{
+    if (!withr::is_connected())
+    {
+        // no state to update if not connected to withrottle
+        return;
+    }
+
+    static Direction s_last_direction = Direction::Forward;
+
+    if (ui_Train_Main_direction_label != nullptr)
+    {
+        std::optional<Direction> current_dir = withr::get_direction();
+        if (current_dir && *current_dir != s_last_direction)
+        {
+            s_last_direction = *current_dir;
+            lv_label_set_text(ui_Train_Main_direction_label,
+                              *current_dir == Direction::Forward ? DIR_FWD_LABEL : DIR_REV_LABEL);
         }
     }
 }
@@ -88,6 +110,10 @@ static void ui_update_task(void* arg)
             if (act_scr == ui_Settings_Screen)
             {
                 update_settings_screen_values();
+            }
+            else if (act_scr == ui_Train_Main_Control)
+            {
+                update_main_control_state();
             }
 
             // Apply scroll from encoder
@@ -121,9 +147,9 @@ static void ui_update_task(void* arg)
                     lv_arc_set_value(ui_Train_Main_Throttle, new_value);
 
                     // Convert to 0-100 percent and send to WiThrottle
-                    int speed_pct =
-                        (int) (((new_value - min_value) * 100) / (max_value - min_value));
-                    withr::set_speed(withr::percent_to_speed(speed_pct));
+                    uint8_t speed_pct =
+                        (uint8_t) (((new_value - min_value) * 100) / (max_value - min_value));
+                    withr::set_speed(speed_pct);
                 }
             }
 
