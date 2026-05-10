@@ -23,6 +23,9 @@ extern lv_obj_t * ui_Train_Main_Fn_Btn_Label;
 extern void ui_event_Train_Main_Stop_Btn(lv_event_t * e);
 extern lv_obj_t * ui_Train_Main_Stop_Btn;
 extern lv_obj_t * ui_Train_Main_Stop_Btn_Label1;
+extern void ui_event_Train_Main_direction(lv_event_t * e);
+extern lv_obj_t * ui_Train_Main_direction;
+extern lv_obj_t * ui_Train_Main_direction_label;
 // CUSTOM VARIABLES
 extern lv_obj_t * uic_Train_Main_Control;
 extern lv_obj_t * uic_Train_Main_Throttle;
@@ -32,6 +35,8 @@ extern lv_obj_t * uic_Train_Main_Fn_Btn;
 extern lv_obj_t * uic_Train_Main_Fn_Btn_Label;
 extern lv_obj_t * uic_Train_Main_Stop_Btn;
 extern lv_obj_t * uic_Train_Main_Stop_Btn_Label1;
+extern lv_obj_t * uic_Train_Main_direction;
+extern lv_obj_t * uic_Train_Main_direction_label;
 
 #ifdef __cplusplus
 } /*extern "C"*/

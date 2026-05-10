@@ -26,6 +26,7 @@
 #include "Param.h"
 #include "ConsoleCommands.h"
 #include "wifi.h"
+#include "withrottle_client.h"
 #include <atomic>
 
 /// NVS parameter for WiThrottle URL
@@ -118,6 +119,11 @@ static void ui_update_task(void* arg)
 
                     // Update the arc value
                     lv_arc_set_value(ui_Train_Main_Throttle, new_value);
+
+                    // Convert to 0-100 percent and send to WiThrottle
+                    int speed_pct =
+                        (int) (((new_value - min_value) * 100) / (max_value - min_value));
+                    withr::set_speed(withr::percent_to_speed(speed_pct));
                 }
             }
 
@@ -286,6 +292,8 @@ extern "C" void app_main(void)
     xTaskCreate(deadlock_monitor_task, "deadlock_monitor", 8 * 1024, NULL, 1, NULL);
 
     params::ParamMgr::getInstance().listAll();
+
+    withr::client_start();
 
     ESP_LOGI(TAG, "App setup complete, deleting app_main task");
 

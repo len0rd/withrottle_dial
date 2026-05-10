@@ -580,7 +580,7 @@ void display_init(void)
     assert(touch_queue);
 
     // Start touch reader task with priority between UI tasks and LVGL
-    xTaskCreate(touch_reader_task, "touch_reader", 6 * 1024, NULL, 4, NULL);
+    xTaskCreate(touch_reader_task, "touch_reader", 4096, NULL, 4, NULL);
     ESP_LOGI(TAG, "Touch reader task started");
 
     ui_sem = xSemaphoreCreateMutex();

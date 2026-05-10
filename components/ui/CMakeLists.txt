@@ -5,6 +5,7 @@ file(GLOB UI_SRCS
     "generated/images/*.c"
     "generated/screens/*.c"
 )
+list(FILTER UI_SRCS EXCLUDE REGEX "ui_events\\.c$")
 
 idf_component_register(
     SRCS
@@ -16,6 +17,7 @@ idf_component_register(
         esp_lcd_sh8601
         i2c_bsp
         lcd_bl_pwm_bsp
+        hw_config
     INCLUDE_DIRS
         "."
         "generated/"

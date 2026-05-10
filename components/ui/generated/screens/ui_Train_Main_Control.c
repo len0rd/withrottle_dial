@@ -5,6 +5,8 @@
 
 #include "../ui.h"
 
+lv_obj_t * uic_Train_Main_direction_label;
+lv_obj_t * uic_Train_Main_direction;
 lv_obj_t * uic_Train_Main_Stop_Btn_Label1;
 lv_obj_t * uic_Train_Main_Stop_Btn;
 lv_obj_t * uic_Train_Main_Fn_Btn_Label;
@@ -21,6 +23,8 @@ lv_obj_t * ui_Train_Main_Fn_Btn = NULL;
 lv_obj_t * ui_Train_Main_Fn_Btn_Label = NULL;
 lv_obj_t * ui_Train_Main_Stop_Btn = NULL;
 lv_obj_t * ui_Train_Main_Stop_Btn_Label1 = NULL;
+lv_obj_t * ui_Train_Main_direction = NULL;
+lv_obj_t * ui_Train_Main_direction_label = NULL;
 // event funtions
 void ui_event_Train_Main_Control_Back_Btn(lv_event_t * e)
 {
@@ -32,6 +36,15 @@ void ui_event_Train_Main_Control_Back_Btn(lv_event_t * e)
 }
 
 void ui_event_Train_Main_Stop_Btn(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        onStopClicked(e);
+    }
+}
+
+void ui_event_Train_Main_direction(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
 
@@ -53,7 +66,7 @@ void ui_Train_Main_Control_screen_init(void)
     lv_obj_set_width(ui_Train_Main_Throttle, 375);
     lv_obj_set_height(ui_Train_Main_Throttle, 375);
     lv_obj_set_align(ui_Train_Main_Throttle, LV_ALIGN_CENTER);
-    lv_arc_set_value(ui_Train_Main_Throttle, 50);
+    lv_arc_set_value(ui_Train_Main_Throttle, 0);
     ui_object_set_themeable_style_property(ui_Train_Main_Throttle, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_COLOR,
                                            _ui_theme_color_Secondary);
     ui_object_set_themeable_style_property(ui_Train_Main_Throttle, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_ARC_OPA,
@@ -134,8 +147,31 @@ void ui_Train_Main_Control_screen_init(void)
     lv_label_set_text(ui_Train_Main_Stop_Btn_Label1, "STOP");
     lv_obj_set_style_text_font(ui_Train_Main_Stop_Btn_Label1, &lv_font_montserrat_26, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_Train_Main_direction = lv_btn_create(ui_Train_Main_Control);
+    lv_obj_set_width(ui_Train_Main_direction, 100);
+    lv_obj_set_height(ui_Train_Main_direction, 48);
+    lv_obj_set_x(ui_Train_Main_direction, 0);
+    lv_obj_set_y(ui_Train_Main_direction, 116);
+    lv_obj_set_align(ui_Train_Main_direction, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Train_Main_direction, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_Train_Main_direction, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    ui_object_set_themeable_style_property(ui_Train_Main_direction, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_COLOR,
+                                           _ui_theme_color_Standout_Second);
+    ui_object_set_themeable_style_property(ui_Train_Main_direction, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BG_OPA,
+                                           _ui_theme_alpha_Standout_Second);
+
+    ui_Train_Main_direction_label = lv_label_create(ui_Train_Main_direction);
+    lv_obj_set_width(ui_Train_Main_direction_label, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Train_Main_direction_label, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_Train_Main_direction_label, -3);
+    lv_obj_set_y(ui_Train_Main_direction_label, 0);
+    lv_obj_set_align(ui_Train_Main_direction_label, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Train_Main_direction_label, "dir >");
+    lv_obj_set_style_text_font(ui_Train_Main_direction_label, &lv_font_montserrat_26, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     lv_obj_add_event_cb(ui_Train_Main_Control_Back_Btn, ui_event_Train_Main_Control_Back_Btn, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Train_Main_Stop_Btn, ui_event_Train_Main_Stop_Btn, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Train_Main_direction, ui_event_Train_Main_direction, LV_EVENT_ALL, NULL);
     uic_Train_Main_Control = ui_Train_Main_Control;
     uic_Train_Main_Throttle = ui_Train_Main_Throttle;
     uic_Train_Main_Name_Label = ui_Train_Main_Name_Label;
@@ -144,6 +180,8 @@ void ui_Train_Main_Control_screen_init(void)
     uic_Train_Main_Fn_Btn_Label = ui_Train_Main_Fn_Btn_Label;
     uic_Train_Main_Stop_Btn = ui_Train_Main_Stop_Btn;
     uic_Train_Main_Stop_Btn_Label1 = ui_Train_Main_Stop_Btn_Label1;
+    uic_Train_Main_direction = ui_Train_Main_direction;
+    uic_Train_Main_direction_label = ui_Train_Main_direction_label;
 
 }
 
@@ -168,5 +206,9 @@ void ui_Train_Main_Control_screen_destroy(void)
     ui_Train_Main_Stop_Btn = NULL;
     uic_Train_Main_Stop_Btn_Label1 = NULL;
     ui_Train_Main_Stop_Btn_Label1 = NULL;
+    uic_Train_Main_direction = NULL;
+    ui_Train_Main_direction = NULL;
+    uic_Train_Main_direction_label = NULL;
+    ui_Train_Main_direction_label = NULL;
 
 }

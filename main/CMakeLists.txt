@@ -1,9 +1,17 @@
 idf_component_register(
     SRCS
         "main.cpp"
+        "ui_events.cpp"
     INCLUDE_DIRS
         "."
+    REQUIRES
+        hw_config
+        withrottle_client
+        user_encoder_bsp
+        ui
     )
+
+target_link_options(${COMPONENT_LIB} INTERFACE "-Wl,-u,onStopClicked")
 
 set_source_files_properties(
     ${LV_DEMOS_SOURCES}
