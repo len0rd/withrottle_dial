@@ -5,6 +5,8 @@
 
 #include "../ui.h"
 
+lv_obj_t * uic_Settings_WiThrottle_IP_Label;
+lv_obj_t * uic_withrottle_url_value;
 lv_obj_t * uic_Settings_IP_Label;
 lv_obj_t * uic_IP_Value;
 lv_obj_t * uic_Settings_Wifi_Label;
@@ -25,6 +27,9 @@ lv_obj_t * ui_Settings_Wifi_Label = NULL;
 lv_obj_t * ui_Panel1 = NULL;
 lv_obj_t * ui_IP_Value = NULL;
 lv_obj_t * ui_Settings_IP_Label = NULL;
+lv_obj_t * ui_Panel2 = NULL;
+lv_obj_t * ui_withrottle_url_value = NULL;
+lv_obj_t * ui_Settings_WiThrottle_IP_Label = NULL;
 // event funtions
 void ui_event_Settings_Back_Btn(lv_event_t * e)
 {
@@ -155,6 +160,36 @@ void ui_Settings_Screen_screen_init(void)
     lv_obj_set_align(ui_Settings_IP_Label, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Settings_IP_Label, "IP");
 
+    ui_Panel2 = lv_obj_create(ui_Settings_Container);
+    lv_obj_set_width(ui_Panel2, 370);
+    lv_obj_set_height(ui_Panel2, 50);
+    lv_obj_set_x(ui_Panel2, 0);
+    lv_obj_set_y(ui_Panel2, -96);
+    lv_obj_set_align(ui_Panel2, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_Panel2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_Panel2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_Panel2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_object_set_themeable_style_property(ui_Panel2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BORDER_COLOR,
+                                           _ui_theme_color_Secondary);
+    ui_object_set_themeable_style_property(ui_Panel2, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_BORDER_OPA,
+                                           _ui_theme_alpha_Secondary);
+
+    ui_withrottle_url_value = lv_label_create(ui_Panel2);
+    lv_obj_set_width(ui_withrottle_url_value, lv_pct(50));
+    lv_obj_set_height(ui_withrottle_url_value, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_y(ui_withrottle_url_value, 0);
+    lv_obj_set_x(ui_withrottle_url_value, lv_pct(25));
+    lv_obj_set_align(ui_withrottle_url_value, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_withrottle_url_value, "NA");
+
+    ui_Settings_WiThrottle_IP_Label = lv_label_create(ui_Panel2);
+    lv_obj_set_width(ui_Settings_WiThrottle_IP_Label, lv_pct(50));
+    lv_obj_set_height(ui_Settings_WiThrottle_IP_Label, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_y(ui_Settings_WiThrottle_IP_Label, 0);
+    lv_obj_set_x(ui_Settings_WiThrottle_IP_Label, lv_pct(-10));
+    lv_obj_set_align(ui_Settings_WiThrottle_IP_Label, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Settings_WiThrottle_IP_Label, "WiThrottle");
+
     lv_obj_add_event_cb(ui_Settings_Back_Btn, ui_event_Settings_Back_Btn, LV_EVENT_ALL, NULL);
     uic_Settings_Screen = ui_Settings_Screen;
     uic_Settings_Container = ui_Settings_Container;
@@ -165,6 +200,8 @@ void ui_Settings_Screen_screen_init(void)
     uic_Settings_Wifi_Label = ui_Settings_Wifi_Label;
     uic_IP_Value = ui_IP_Value;
     uic_Settings_IP_Label = ui_Settings_IP_Label;
+    uic_withrottle_url_value = ui_withrottle_url_value;
+    uic_Settings_WiThrottle_IP_Label = ui_Settings_WiThrottle_IP_Label;
 
 }
 
@@ -193,5 +230,10 @@ void ui_Settings_Screen_screen_destroy(void)
     ui_IP_Value = NULL;
     uic_Settings_IP_Label = NULL;
     ui_Settings_IP_Label = NULL;
+    ui_Panel2 = NULL;
+    uic_withrottle_url_value = NULL;
+    ui_withrottle_url_value = NULL;
+    uic_Settings_WiThrottle_IP_Label = NULL;
+    ui_Settings_WiThrottle_IP_Label = NULL;
 
 }

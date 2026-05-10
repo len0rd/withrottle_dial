@@ -23,9 +23,13 @@
 #include "display_init.h"
 
 #include "ParamMgr.h"
+#include "Param.h"
 #include "ConsoleCommands.h"
 #include "wifi.h"
 #include <atomic>
+
+/// NVS parameter for WiThrottle URL
+params::Param<std::string> s_withr_url{"withr_url", std::string("")};
 
 static constexpr bool is_screen_scrollable(lv_obj_t* active_screen)
 {
@@ -46,6 +50,14 @@ void update_settings_screen_values()
     {
         std::string ip = get_current_ip_address();
         lv_label_set_text(uic_IP_Value, ip.c_str());
+    }
+    if (uic_withrottle_url_value != NULL)
+    {
+        std::string withrottle_url = s_withr_url.get();
+        if (!withrottle_url.empty())
+        {
+            lv_label_set_text(uic_withrottle_url_value, withrottle_url.c_str());
+        }
     }
 }
 
@@ -248,8 +260,8 @@ static void deadlock_monitor_task(void* arg)
 
 extern "C" void app_main(void)
 {
-    // ConsoleCommandsInit();
-    // espwifi_Init();
+    ConsoleCommandsInit();
+    espwifi_Init();
     ESP_LOGI(TAG, "Starting WiThrottle Knob BUILD 4 \n");
 
     display_init();
@@ -273,7 +285,7 @@ extern "C" void app_main(void)
     xTaskCreate(user_encoder_loop_task, "user_encoder_loop_task", 8 * 1024, NULL, 2, NULL);
     xTaskCreate(deadlock_monitor_task, "deadlock_monitor", 8 * 1024, NULL, 1, NULL);
 
-    // params::ParamMgr::getInstance().listAll();
+    params::ParamMgr::getInstance().listAll();
 
     ESP_LOGI(TAG, "App setup complete, deleting app_main task");
 

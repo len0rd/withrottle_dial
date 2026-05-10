@@ -1,0 +1,3 @@
+[submodule "components/withrottle"]
+	path = components/withrottle
+	url = git@github.com:len0rd/WiThrottleProtocol.git

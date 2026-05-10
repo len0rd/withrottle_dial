@@ -25,6 +25,9 @@ extern lv_obj_t * ui_Settings_Wifi_Label;
 extern lv_obj_t * ui_Panel1;
 extern lv_obj_t * ui_IP_Value;
 extern lv_obj_t * ui_Settings_IP_Label;
+extern lv_obj_t * ui_Panel2;
+extern lv_obj_t * ui_withrottle_url_value;
+extern lv_obj_t * ui_Settings_WiThrottle_IP_Label;
 // CUSTOM VARIABLES
 extern lv_obj_t * uic_Settings_Screen;
 extern lv_obj_t * uic_Settings_Container;
@@ -35,6 +38,8 @@ extern lv_obj_t * uic_Wifi_Value;
 extern lv_obj_t * uic_Settings_Wifi_Label;
 extern lv_obj_t * uic_IP_Value;
 extern lv_obj_t * uic_Settings_IP_Label;
+extern lv_obj_t * uic_withrottle_url_value;
+extern lv_obj_t * uic_Settings_WiThrottle_IP_Label;
 
 #ifdef __cplusplus
 } /*extern "C"*/

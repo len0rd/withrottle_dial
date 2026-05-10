@@ -40,7 +40,7 @@ NvsMgr::~NvsMgr()
 /****************************************************************************/
 esp_err_t NvsMgr::set(const char* name, const void* value, size_t size)
 {
-    xSemaphoreTake(m_mutex, pdMS_TO_TICKS(2000)); // 2 second timeout instead of infinite
+    xSemaphoreTake(m_mutex, portMAX_DELAY);
 
     nvs_handle handle;
     esp_err_t  err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle);
@@ -70,7 +70,7 @@ esp_err_t NvsMgr::set(const char* name, const void* value, size_t size)
 /****************************************************************************/
 esp_err_t NvsMgr::get(const char* name, void* value, size_t& size)
 {
-    xSemaphoreTake(m_mutex, pdMS_TO_TICKS(2000)); // 2 second timeout instead of infinite
+    xSemaphoreTake(m_mutex, portMAX_DELAY);
 
     nvs_handle handle;
     esp_err_t  err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &handle);
