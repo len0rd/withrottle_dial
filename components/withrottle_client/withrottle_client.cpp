@@ -159,7 +159,7 @@ public:
     {
         roster[address]             = RosterInfo{name.c_str(), length};
         roster[address].fns[0].name = "Light"; // assume FN0 is always lights
-        ESP_LOGD(TAG, "Roster[%d]: '%s' (%c%d)", index, name.c_str(), length, address);
+        ESP_LOGI(TAG, "Roster[%d]: '%s' (%c%d)", index, name.c_str(), length, address);
     }
 
     void receivedRosterFunctionList(String functions[MAX_FUNCTIONS]) override
@@ -174,7 +174,7 @@ public:
         {
             if (info.on_throttle == multiThrottle)
             {
-                for (size_t ii = 0; ii < MAX_FUNCTIONS; ii++)
+                for (size_t ii = 1; ii < MAX_FUNCTIONS; ii++)
                 {
                     info.fns[ii].name = functions[ii].c_str();
                 }
@@ -243,7 +243,7 @@ static void withrottle_task(void* arg)
         }
 
         // 3. Initialize WiThrottle session
-        s_wiThrottle.connect(&client);
+        s_wiThrottle.connect(&client, 100);
         s_wiThrottle.setDeviceName(WITHR_DEVICE);
         s_wiThrottle.addLocomotive(DEFAULT_MULTITHROTTLE, WITHR_LOCO_ADDR);
         ESP_LOGI(TAG, "WiThrottle session started");

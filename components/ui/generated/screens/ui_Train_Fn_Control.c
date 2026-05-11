@@ -51,10 +51,11 @@ void ui_Train_Fn_Control_screen_init(void)
     lv_obj_set_y(ui_train_fn_container, 10);
     lv_obj_set_align(ui_train_fn_container, LV_ALIGN_CENTER);
     lv_obj_set_flex_flow(ui_train_fn_container, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(ui_train_fn_container, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_train_fn_container, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLL_CHAIN);      /// Flags
+    lv_obj_set_flex_align(ui_train_fn_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_train_fn_container,
+                      LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM |
+                      LV_OBJ_FLAG_SCROLL_CHAIN);     /// Flags
     lv_obj_set_scroll_dir(ui_train_fn_container, LV_DIR_VER);
-    lv_obj_set_scroll_snap_y(ui_train_fn_container, LV_SCROLL_SNAP_START);
 
     ui_Select_Train_Title1 = lv_obj_create(ui_train_fn_container);
     lv_obj_set_width(ui_Select_Train_Title1, 360);

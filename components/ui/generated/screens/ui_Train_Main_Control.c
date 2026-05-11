@@ -49,7 +49,7 @@ void ui_event_Train_Main_Fn_Btn(lv_event_t * e)
     lv_event_code_t event_code = lv_event_get_code(e);
 
     if(event_code == LV_EVENT_CLICKED) {
-        _ui_screen_change(&ui_Train_Fn_Control, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Train_Fn_Control_screen_init);
+        _ui_screen_change(&ui_Train_Fn_Control, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_Train_Fn_Control_screen_init);
     }
 }
 

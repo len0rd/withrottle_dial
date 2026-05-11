@@ -27,6 +27,7 @@
 #include "ConsoleCommands.h"
 #include "wifi.h"
 #include "withrottle_client.h"
+#include "train_fn_screen.h"
 #include <atomic>
 
 static constexpr bool is_screen_scrollable(lv_obj_t* active_screen)
@@ -118,11 +119,10 @@ static void ui_update_task(void* arg)
             }
 
             // Apply scroll from encoder
-            if (scroll_accumulator != 0)
+            int scroll_amount  = scroll_accumulator.load();
+            scroll_accumulator = 0;
+            if (scroll_amount != 0 && is_screen_scrollable(act_scr))
             {
-                int scroll_amount  = scroll_accumulator.load();
-                scroll_accumulator = 0;
-
                 if (act_scr == ui_Select_Train_Screen)
                 {
                     lv_obj_scroll_by(ui_Train_Select_Container, 0, scroll_amount, LV_ANIM_ON);
@@ -154,7 +154,16 @@ static void ui_update_task(void* arg)
                 }
                 else if (act_scr == ui_Train_Fn_Control)
                 {
-                    lv_obj_scroll_by(uic_train_fn_container, 0, scroll_amount, LV_ANIM_ON);
+                    static constexpr float SCROLL_SCALER = 1.5f;
+                    if (scroll_amount > 0 && lv_obj_get_scroll_top(uic_train_fn_container) <= 0)
+                        scroll_amount = 0;
+                    if (scroll_amount < 0 && lv_obj_get_scroll_bottom(uic_train_fn_container) <= 0)
+                        scroll_amount = 0;
+                    if (scroll_amount != 0)
+                    {
+                        lv_obj_scroll_by(uic_train_fn_container, 0, SCROLL_SCALER * scroll_amount,
+                                         LV_ANIM_OFF);
+                    }
                 }
             }
 
@@ -200,51 +209,18 @@ static void ui_update_task(void* arg)
 
 static void user_encoder_loop_task(void* arg)
 {
-    uint32_t failed_locks = 0;
-
     while (1)
     {
-        EventBits_t even =
+        EventBits_t event =
             xEventGroupWaitBits(knob_even_, BIT_EVEN_ALL, pdTRUE, pdFALSE, pdMS_TO_TICKS(5000));
 
-        // Thread-safe access to LVGL - get active screen with mutex
-        lv_obj_t* act_scr    = nullptr;
-        uint32_t  start_time = esp_timer_get_time() / 1000;
-
-        if (ui_lvgl_lock(100)) // Increased timeout from 50ms to 100ms
+        if (READ_BIT(event, 0))
         {
-            failed_locks = 0;
-            act_scr      = lv_scr_act();
-            ui_lvgl_unlock();
+            scroll_accumulator += 50;
         }
-        else
+        if (READ_BIT(event, 1))
         {
-            failed_locks++;
-            uint32_t wait_time = (esp_timer_get_time() / 1000) - start_time;
-            ESP_LOGW(TAG, "encoder_task: Failed to get active screen (failure #%lu, waited %lu ms)",
-                     failed_locks, wait_time);
-
-            // Check stack and continue with null screen (safer than blocking)
-            UBaseType_t stack_high_water = uxTaskGetStackHighWaterMark(NULL);
-            if (stack_high_water < 512)
-            {
-                ESP_LOGW(TAG, "encoder_task: Low stack! High water mark: %lu bytes",
-                         stack_high_water);
-            }
-
-            continue; // Skip this iteration if we can't get the screen
-        }
-
-        if (is_screen_scrollable(act_scr))
-        {
-            if (READ_BIT(even, 0))
-            {
-                scroll_accumulator += 50;
-            }
-            if (READ_BIT(even, 1))
-            {
-                scroll_accumulator -= 50;
-            }
+            scroll_accumulator -= 50;
         }
     }
 }
@@ -319,7 +295,7 @@ extern "C" void app_main(void)
     // initialize user encoder
     user_encoder_init();
     xTaskCreate(ui_update_task, "ui_update_task", 8 * 1024, NULL, 5, NULL);
-    xTaskCreate(user_encoder_loop_task, "user_encoder_loop_task", 2 * 1024, NULL, 2, NULL);
+    xTaskCreate(user_encoder_loop_task, "user_enc_task", 2 * 1024, NULL, 2, NULL);
     // xTaskCreate(deadlock_monitor_task, "deadlock_monitor", 2 * 1024, NULL, 1, NULL);
 
     params::ParamMgr::getInstance().listAll();

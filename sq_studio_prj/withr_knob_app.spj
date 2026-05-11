@@ -5905,7 +5905,7 @@
                       {
                         "nid": 1000541,
                         "strtype": "CHANGE SCREEN/Fade_mode",
-                        "strval": "FADE_ON",
+                        "strval": "NONE",
                         "InheritedType": 3
                       },
                       {
@@ -7578,7 +7578,7 @@
                 "Flow": 1,
                 "Wrap": false,
                 "Reversed": false,
-                "MainAlignment": 1,
+                "MainAlignment": 0,
                 "CrossAlignment": 1,
                 "TrackAlignment": 1,
                 "LayoutType": 1,
@@ -7646,6 +7646,24 @@
                 "InheritedType": 1
               },
               {
+                "nid": 230,
+                "strtype": "OBJECT/Scrollable",
+                "strval": "False",
+                "InheritedType": 2
+              },
+              {
+                "nid": 240,
+                "strtype": "OBJECT/Scroll_elastic",
+                "strval": "False",
+                "InheritedType": 2
+              },
+              {
+                "nid": 250,
+                "strtype": "OBJECT/Scroll_momentum",
+                "strval": "False",
+                "InheritedType": 2
+              },
+              {
                 "nid": 270,
                 "strtype": "OBJECT/Scroll_chain",
                 "strval": "False",
@@ -7672,11 +7690,12 @@
               {
                 "nid": 315,
                 "strtype": "OBJECT/Scroll_snap_y",
-                "strval": "START",
+                "strval": "NONE",
                 "InheritedType": 3
               },
               {
                 "nid": 320,
+                "flags": 1048576,
                 "strtype": "OBJECT/States",
                 "InheritedType": 1
               },
@@ -7989,7 +8008,7 @@
   },
   "animations": [],
   "selected_theme": "Default",
-  "selected_screen": "GUID67065094-697411S6164281",
+  "selected_screen": "GUID72314950-653661S5005102",
   "info": {
     "name": "SquareLine_Project.spj",
     "depth": 2,
@@ -8017,7 +8036,7 @@
     "custom_variable_prefix": "uic",
     "separate_screen_save": false,
     "hierarchy_state_save": false,
-    "backup_cnt": 89,
+    "backup_cnt": 95,
     "autosave_cnt": 0,
     "group_color_cnt": 2,
     "imagebytearrayprefix": "",
