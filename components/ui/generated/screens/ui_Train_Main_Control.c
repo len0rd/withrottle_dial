@@ -26,12 +26,30 @@ lv_obj_t * ui_Train_Main_Stop_Btn_Label1 = NULL;
 lv_obj_t * ui_Train_Main_direction = NULL;
 lv_obj_t * ui_Train_Main_direction_label = NULL;
 // event funtions
+void ui_event_Train_Main_Control(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_SCREEN_LOADED) {
+        onTrainMainControlLoaded(e);
+    }
+}
+
 void ui_event_Train_Main_Control_Back_Btn(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
 
     if(event_code == LV_EVENT_CLICKED) {
         _ui_screen_change(&ui_Main_Screen, LV_SCR_LOAD_ANIM_NONE, 200, 0, &ui_Main_Screen_screen_init);
+    }
+}
+
+void ui_event_Train_Main_Fn_Btn(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        _ui_screen_change(&ui_Train_Fn_Control, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Train_Fn_Control_screen_init);
     }
 }
 
@@ -170,8 +188,10 @@ void ui_Train_Main_Control_screen_init(void)
     lv_obj_set_style_text_font(ui_Train_Main_direction_label, &lv_font_montserrat_26, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_add_event_cb(ui_Train_Main_Control_Back_Btn, ui_event_Train_Main_Control_Back_Btn, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Train_Main_Fn_Btn, ui_event_Train_Main_Fn_Btn, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Train_Main_Stop_Btn, ui_event_Train_Main_Stop_Btn, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Train_Main_direction, ui_event_Train_Main_direction, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Train_Main_Control, ui_event_Train_Main_Control, LV_EVENT_ALL, NULL);
     uic_Train_Main_Control = ui_Train_Main_Control;
     uic_Train_Main_Throttle = ui_Train_Main_Throttle;
     uic_Train_Main_Name_Label = ui_Train_Main_Name_Label;

@@ -20,8 +20,8 @@ params::Param<int>         s_withr_port{"withr_port", 12090};
 
 #define WITHR_LOCO_ADDR "S3" // 'S' = short address, '3' = DCC address 3
 #define WITHR_DEVICE "withrottle_dial"
-#define WITHR_TASK_STACK (8 * 1024) // WiThrottleProtocol::inputbuffer is 32KB alone
-#define WITHR_TASK_PRIO 4           // Below LVGL (5), above UI update (2-3)
+#define WITHR_TASK_STACK (4 * 1024)
+#define WITHR_TASK_PRIO 4 // Below LVGL (5), above UI update (2-3)
 
 // make static since its input buffer is MASSIVE (32kb)
 static WiThrottleProtocol s_wiThrottle;
@@ -34,9 +34,14 @@ typedef struct
     {
         CMD_SPEED,
         CMD_DIR,
-        CMD_ESTOP
+        CMD_ESTOP,
+        CMD_FUNC
     } type;
-    int  value; // speed 0-126, or 1=Forward / 0=Reverse for CMD_DIR
+    /// speed 0-126, or 1=Forward / 0=Reverse for CMD_DIR, or func index for CMD_FUNC
+    int value;
+    /// used for CMD_FUNC: desired function on/off state
+    bool func_state;
+    ///  which throttle to appy the command to
     char throttle = DEFAULT_MULTITHROTTLE;
 } withr_cmd_t;
 
@@ -64,13 +69,25 @@ class ThrottleDelegate : public WiThrottleProtocolDelegate
 public:
     // types:
 
+    /// @brief  Information on a single function within a roster entry
+    struct FunctionInfo
+    {
+        // Human name of the function
+        std::string name = "";
+        // current function state
+        bool state = false;
+    };
+
     struct RosterInfo
     {
+        static constexpr char NO_THROTTLE = '\0';
+
         /// human name for the RosterEntry
-        std::string name;
+        std::string name = "";
         char        length; // 'S' or 'L'
         /// Set to true if this Roster entry has been added to the throttle, otherwise false
-        bool on_throttle = false;
+        char on_throttle = NO_THROTTLE; // when on a throttle, set to the throttle ID
+        std::array<FunctionInfo, MAX_FUNCTIONS> fns = {};
     };
 
     // methods:
@@ -86,6 +103,11 @@ public:
 
     void addressAdded(String address, String entry) override
     {
+        addressAddedMultiThrottle(DEFAULT_MULTITHROTTLE, address, entry);
+    }
+
+    void addressAddedMultiThrottle(char multiThrottle, String address, String entry) override
+    {
         if (address.length() < 2)
         {
             return; // bad format
@@ -97,7 +119,7 @@ public:
         {
             if (key == addr_num && info.length == addr_len)
             {
-                info.on_throttle = true;
+                info.on_throttle = multiThrottle;
                 break;
             }
         }
@@ -105,6 +127,11 @@ public:
     }
 
     void addressRemoved(String address, String command) override
+    {
+        addressRemovedMultiThrottle(DEFAULT_MULTITHROTTLE, address, command);
+    }
+
+    void addressRemovedMultiThrottle(char multiThrottle, String address, String command) override
     {
         if (address.length() >= 2)
         {
@@ -114,7 +141,7 @@ public:
             {
                 if (key == addr_num && info.length == addr_len)
                 {
-                    info.on_throttle = false;
+                    info.on_throttle = RosterInfo::NO_THROTTLE;
                     break;
                 }
             }
@@ -130,8 +157,52 @@ public:
 
     void receivedRosterEntry(int index, String name, int address, char length) override
     {
-        roster[address] = RosterInfo{name.c_str(), length};
+        roster[address]             = RosterInfo{name.c_str(), length};
+        roster[address].fns[0].name = "Light"; // assume FN0 is always lights
         ESP_LOGD(TAG, "Roster[%d]: '%s' (%c%d)", index, name.c_str(), length, address);
+    }
+
+    void receivedRosterFunctionList(String functions[MAX_FUNCTIONS]) override
+    {
+        receivedRosterFunctionListMultiThrottle(DEFAULT_MULTITHROTTLE, functions);
+    }
+
+    void receivedRosterFunctionListMultiThrottle(char   multiThrottle,
+                                                 String functions[MAX_FUNCTIONS]) override
+    {
+        for (auto& [key, info] : roster)
+        {
+            if (info.on_throttle == multiThrottle)
+            {
+                for (size_t ii = 0; ii < MAX_FUNCTIONS; ii++)
+                {
+                    info.fns[ii].name = functions[ii].c_str();
+                }
+                ESP_LOGD(TAG, "Stored %d function names for loco %d", MAX_FUNCTIONS, key);
+                break;
+            }
+        }
+    }
+
+    void receivedFunctionState(uint8_t func, bool state) override
+    {
+        receivedFunctionStateMultiThrottle(DEFAULT_MULTITHROTTLE, func, state);
+    }
+
+    void receivedFunctionStateMultiThrottle(char multiThrottle, uint8_t func, bool state) override
+    {
+        if (func >= MAX_FUNCTIONS)
+        {
+            return;
+        }
+        for (auto& [key, info] : roster)
+        {
+            if (info.on_throttle == multiThrottle)
+            {
+                info.fns[func].state = state;
+                break;
+            }
+        }
     }
 
     // Cached data:
@@ -163,7 +234,7 @@ static void withrottle_task(void* arg)
         // 2. Connect TCP socket
         std::string withrottle_ip   = s_withr_ip.get();
         int         withrottle_port = s_withr_port.get();
-        ESP_LOGI(TAG, "Connecting to %s:%d", withrottle_ip, withrottle_port);
+        ESP_LOGI(TAG, "Connecting to %s:%d", withrottle_ip.c_str(), withrottle_port);
         if (!client.connect(withrottle_ip.c_str(), withrottle_port))
         {
             ESP_LOGE(TAG, "TCP connect failed, retrying in 5s");
@@ -195,6 +266,9 @@ static void withrottle_task(void* arg)
                     case withr_cmd_t::CMD_ESTOP:
                         ESP_LOGI(TAG, "ESTOP CALLED");
                         s_wiThrottle.emergencyStop(cmd.throttle);
+                        break;
+                    case withr_cmd_t::CMD_FUNC:
+                        s_wiThrottle.setFunction(cmd.throttle, cmd.value, cmd.func_state);
                         break;
                 }
             }
@@ -255,21 +329,26 @@ void set_speed(uint8_t speed_percent)
 {
     if (speed_percent > 100)
     {
-        return;
+        speed_percent = 100;
     }
-    withr_cmd_t cmd = {withr_cmd_t::CMD_SPEED, percent_to_speed(speed_percent)};
+    withr_cmd_t cmd = {};
+    cmd.type        = withr_cmd_t::CMD_SPEED;
+    cmd.value       = percent_to_speed(speed_percent);
     xQueueSend(s_cmd_queue, &cmd, 0); // non-blocking; drop if queue full
 }
 
 void emergency_stop(void)
 {
-    withr_cmd_t cmd = {withr_cmd_t::CMD_ESTOP, 0};
+    withr_cmd_t cmd = {};
+    cmd.type        = withr_cmd_t::CMD_ESTOP;
     xQueueSend(s_cmd_queue, &cmd, 0);
 }
 
 void set_direction(Direction dir)
 {
-    withr_cmd_t cmd = {withr_cmd_t::CMD_DIR, dir == Direction::Forward ? 1 : 0};
+    withr_cmd_t cmd = {};
+    cmd.type        = withr_cmd_t::CMD_DIR;
+    cmd.value       = dir == Direction::Forward ? 1 : 0;
     xQueueSend(s_cmd_queue, &cmd, 0);
 }
 
@@ -278,11 +357,47 @@ bool is_connected(void)
     return s_connected;
 }
 
+std::optional<bool> get_function_state(uint8_t func)
+{
+    if (!is_connected() || func >= MAX_FUNCTIONS)
+        return std::nullopt;
+    for (const auto& [key, info] : s_delegate.roster)
+    {
+        if (info.on_throttle == DEFAULT_MULTITHROTTLE)
+            return info.fns[func].state;
+    }
+    return std::nullopt;
+}
+
+std::optional<std::string> get_function_name(uint8_t func)
+{
+    if (func >= MAX_FUNCTIONS)
+        return std::nullopt;
+    for (const auto& [key, info] : s_delegate.roster)
+    {
+        if (info.on_throttle == DEFAULT_MULTITHROTTLE)
+            return info.fns[func].name;
+    }
+    return std::nullopt;
+}
+
+void set_function(uint8_t func, bool state)
+{
+    if (func >= MAX_FUNCTIONS)
+        return;
+    withr_cmd_t cmd{};
+    cmd.type       = withr_cmd_t::CMD_FUNC;
+    cmd.value      = func;
+    cmd.func_state = state;
+    cmd.throttle   = DEFAULT_MULTITHROTTLE;
+    xQueueSend(s_cmd_queue, &cmd, 0);
+}
+
 std::optional<std::string> get_loco_name()
 {
     for (const auto& [key, value] : s_delegate.roster)
     {
-        if (value.on_throttle)
+        if (value.on_throttle == DEFAULT_MULTITHROTTLE)
         {
             return value.name;
         }

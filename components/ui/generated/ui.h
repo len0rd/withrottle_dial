@@ -22,6 +22,7 @@ extern "C" {
 #include "screens/ui_Settings_Screen.h"
 #include "screens/ui_Select_Train_Screen.h"
 #include "screens/ui_Train_Main_Control.h"
+#include "screens/ui_Train_Fn_Control.h"
 
 ///////////////////// VARIABLES ////////////////////
 

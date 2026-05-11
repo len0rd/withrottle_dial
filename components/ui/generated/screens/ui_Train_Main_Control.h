@@ -13,11 +13,13 @@ extern "C" {
 // SCREEN: ui_Train_Main_Control
 extern void ui_Train_Main_Control_screen_init(void);
 extern void ui_Train_Main_Control_screen_destroy(void);
+extern void ui_event_Train_Main_Control(lv_event_t * e);
 extern lv_obj_t * ui_Train_Main_Control;
 extern lv_obj_t * ui_Train_Main_Throttle;
 extern lv_obj_t * ui_Train_Main_Name_Label;
 extern void ui_event_Train_Main_Control_Back_Btn(lv_event_t * e);
 extern lv_obj_t * ui_Train_Main_Control_Back_Btn;
+extern void ui_event_Train_Main_Fn_Btn(lv_event_t * e);
 extern lv_obj_t * ui_Train_Main_Fn_Btn;
 extern lv_obj_t * ui_Train_Main_Fn_Btn_Label;
 extern void ui_event_Train_Main_Stop_Btn(lv_event_t * e);

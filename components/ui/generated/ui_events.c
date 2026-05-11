@@ -14,3 +14,18 @@ void onDirClicked(lv_event_t * e)
 {
 	// Your code here
 }
+
+void onTrainMainControlLoaded(lv_event_t * e)
+{
+	// Your code here
+}
+
+void onTrainFnControlLoaded(lv_event_t * e)
+{
+	// Your code here
+}
+
+void onTrainFnUnloaded(lv_event_t * e)
+{
+	// Your code here
+}

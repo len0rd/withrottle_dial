@@ -37,6 +37,7 @@ void ui_init(void)
     ui_Settings_Screen_screen_init();
     ui_Select_Train_Screen_screen_init();
     ui_Train_Main_Control_screen_init();
+    ui_Train_Fn_Control_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
     lv_disp_load_scr(ui_Main_Screen);
 }
@@ -47,4 +48,5 @@ void ui_destroy(void)
     ui_Settings_Screen_screen_destroy();
     ui_Select_Train_Screen_screen_destroy();
     ui_Train_Main_Control_screen_destroy();
+    ui_Train_Fn_Control_screen_destroy();
 }

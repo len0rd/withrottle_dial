@@ -2,6 +2,7 @@ screens/ui_Main_Screen.c
 screens/ui_Settings_Screen.c
 screens/ui_Select_Train_Screen.c
 screens/ui_Train_Main_Control.c
+screens/ui_Train_Fn_Control.c
 ui_theme_manager.c
 ui_themes.c
 ui.c

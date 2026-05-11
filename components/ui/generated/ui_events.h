@@ -10,8 +10,11 @@
 extern "C" {
 #endif
 
+void onTrainMainControlLoaded(lv_event_t * e);
 void onStopClicked(lv_event_t * e);
 void onDirClicked(lv_event_t * e);
+void onTrainFnControlLoaded(lv_event_t * e);
+void onTrainFnUnloaded(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

@@ -32,7 +32,8 @@
 static constexpr bool is_screen_scrollable(lv_obj_t* active_screen)
 {
     return active_screen != nullptr &&
-           ((active_screen == ui_Select_Train_Screen) || (active_screen == ui_Train_Main_Control));
+           ((active_screen == ui_Select_Train_Screen) || (active_screen == ui_Train_Main_Control) ||
+            (active_screen == ui_Train_Fn_Control));
 }
 
 // Function to update settings screen values
@@ -150,6 +151,10 @@ static void ui_update_task(void* arg)
                     uint8_t speed_pct =
                         (uint8_t) (((new_value - min_value) * 100) / (max_value - min_value));
                     withr::set_speed(speed_pct);
+                }
+                else if (act_scr == ui_Train_Fn_Control)
+                {
+                    lv_obj_scroll_by(uic_train_fn_container, 0, scroll_amount, LV_ANIM_ON);
                 }
             }
 
@@ -314,8 +319,8 @@ extern "C" void app_main(void)
     // initialize user encoder
     user_encoder_init();
     xTaskCreate(ui_update_task, "ui_update_task", 8 * 1024, NULL, 5, NULL);
-    xTaskCreate(user_encoder_loop_task, "user_encoder_loop_task", 8 * 1024, NULL, 2, NULL);
-    xTaskCreate(deadlock_monitor_task, "deadlock_monitor", 8 * 1024, NULL, 1, NULL);
+    xTaskCreate(user_encoder_loop_task, "user_encoder_loop_task", 2 * 1024, NULL, 2, NULL);
+    // xTaskCreate(deadlock_monitor_task, "deadlock_monitor", 2 * 1024, NULL, 1, NULL);
 
     params::ParamMgr::getInstance().listAll();
 

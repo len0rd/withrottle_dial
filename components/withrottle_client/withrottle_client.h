@@ -35,6 +35,17 @@ bool is_connected(void);
 /// Return the string name of the first locomotive attached to the global throttle
 std::optional<std::string> get_loco_name();
 
+/// Get the cached state of function `func` on the throttle loco.
+/// Returns nullopt if not connected or func out of range.
+std::optional<bool> get_function_state(uint8_t func);
+
+/// Get the name of function `func` on the throttle loco.
+/// Returns nullopt if not connected; empty string means function is not defined.
+std::optional<std::string> get_function_name(uint8_t func);
+
+/// Send a function on/off command to the throttle loco.
+void set_function(uint8_t func, bool state);
+
 /// @brief Get the connection URL Withrottle is using/trying for the Withrottle server
 std::string get_server_url();
 

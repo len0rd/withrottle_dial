@@ -2,6 +2,7 @@ idf_component_register(
     SRCS
         "main.cpp"
         "ui_events.cpp"
+        "train_fn_screen.cpp"
     INCLUDE_DIRS
         "."
     REQUIRES

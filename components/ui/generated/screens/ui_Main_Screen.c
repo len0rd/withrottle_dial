@@ -67,7 +67,7 @@ void ui_Main_Screen_screen_init(void)
     lv_obj_set_x(ui_Select_Train_Btn_Label, -4);
     lv_obj_set_y(ui_Select_Train_Btn_Label, 16);
     lv_obj_set_align(ui_Select_Train_Btn_Label, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Select_Train_Btn_Label, "Select Train");
+    lv_label_set_text(ui_Select_Train_Btn_Label, "Run Train");
     ui_object_set_themeable_style_property(ui_Select_Train_Btn_Label, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_COLOR,
                                            _ui_theme_color_Standout);
     ui_object_set_themeable_style_property(ui_Select_Train_Btn_Label, LV_PART_MAIN | LV_STATE_DEFAULT, LV_STYLE_TEXT_OPA,
