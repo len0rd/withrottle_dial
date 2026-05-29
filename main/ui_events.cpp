@@ -7,6 +7,7 @@ extern "C"
     void onStopClicked(lv_event_t* e)
     {
         withr::emergency_stop();
+        lv_arc_set_value(ui_Train_Main_Throttle, 0);
     }
 
     void onDirClicked(lv_event_t* e)
