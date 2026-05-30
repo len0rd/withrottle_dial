@@ -25,6 +25,10 @@ public:
      */
     static void load_for_loco();
 
+    /// @brief TrainFn Screen update method
+    /// @param scroll_amount amount of dial scroll accumulated since the last update
+    static void on_screen_update(int scroll_amount);
+
     /**
      * Call from onTrainFnUnloaded().
      * Resets internal state so buttons are rebuilt on the next load

@@ -18,3 +18,7 @@ def onTrainFnControlLoaded(event_struct):
 def onTrainFnUnloaded(event_struct):
     return
 
+
+def onSelectTrainLoaded(event_struct):
+    return
+

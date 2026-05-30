@@ -28,6 +28,7 @@
 #include "wifi.h"
 #include "withrottle_client.h"
 #include "train_fn_screen.h"
+#include "train_main_control_screen.h"
 #include <atomic>
 
 static constexpr bool is_screen_scrollable(lv_obj_t* active_screen)
@@ -61,31 +62,6 @@ void update_settings_screen_values()
     }
 }
 
-/// Update UI state of the main train control page
-#define DIR_FWD_LABEL "dir >"
-#define DIR_REV_LABEL "< dir"
-void update_main_control_state()
-{
-    if (!withr::is_connected())
-    {
-        // no state to update if not connected to withrottle
-        return;
-    }
-
-    static Direction s_last_direction = Direction::Forward;
-
-    if (ui_Train_Main_direction_label != nullptr)
-    {
-        std::optional<Direction> current_dir = withr::get_direction();
-        if (current_dir && *current_dir != s_last_direction)
-        {
-            s_last_direction = *current_dir;
-            lv_label_set_text(ui_Train_Main_direction_label,
-                              *current_dir == Direction::Forward ? DIR_FWD_LABEL : DIR_REV_LABEL);
-        }
-    }
-}
-
 static std::atomic<int> scroll_accumulator{0};
 
 static const char* TAG = "main";
@@ -105,73 +81,29 @@ static void ui_update_task(void* arg)
             successful_locks++;
             failed_locks = 0; // Reset failure counter
 
-            uint32_t lock_acquired_time = esp_timer_get_time() / 1000;
+            int scroll_amount = scroll_accumulator.exchange(0);
 
-            // Update settings screen values if currently displayed
             lv_obj_t* act_scr = lv_scr_act();
+            // update whatever screen is currently active
             if (act_scr == ui_Settings_Screen)
             {
                 update_settings_screen_values();
             }
             else if (act_scr == ui_Train_Main_Control)
             {
-                update_main_control_state();
+                TrainMainControlScreen::on_screen_update(scroll_amount);
+            }
+            else if (act_scr == ui_Train_Fn_Control)
+            {
+                TrainFnScreen::on_screen_update(scroll_amount);
             }
 
-            // Apply scroll from encoder
-            int scroll_amount  = scroll_accumulator.load();
-            scroll_accumulator = 0;
             if (scroll_amount != 0 && is_screen_scrollable(act_scr))
             {
                 if (act_scr == ui_Select_Train_Screen)
                 {
                     lv_obj_scroll_by(ui_Train_Select_Container, 0, scroll_amount, LV_ANIM_ON);
                 }
-                else if (act_scr == ui_Train_Main_Control)
-                {
-                    // Update throttle arc based on scroll
-                    int16_t current_value = lv_arc_get_value(ui_Train_Main_Throttle);
-                    int16_t min_value     = lv_arc_get_min_value(ui_Train_Main_Throttle);
-                    int16_t max_value     = lv_arc_get_max_value(ui_Train_Main_Throttle);
-
-                    // Convert scroll to throttle steps (divide to reduce sensitivity)
-                    int16_t throttle_delta = -1 * (scroll_amount / 25);
-                    int16_t new_value      = current_value + throttle_delta;
-
-                    // Clamp to valid range
-                    if (new_value < min_value)
-                        new_value = min_value;
-                    if (new_value > max_value)
-                        new_value = max_value;
-
-                    // Update the arc value
-                    lv_arc_set_value(ui_Train_Main_Throttle, new_value);
-
-                    // Convert to 0-100 percent and send to WiThrottle
-                    uint8_t speed_pct =
-                        (uint8_t) (((new_value - min_value) * 100) / (max_value - min_value));
-                    withr::set_speed(speed_pct);
-                }
-                else if (act_scr == ui_Train_Fn_Control)
-                {
-                    static constexpr float SCROLL_SCALER = 1.5f;
-                    if (scroll_amount > 0 && lv_obj_get_scroll_top(uic_train_fn_container) <= 0)
-                        scroll_amount = 0;
-                    if (scroll_amount < 0 && lv_obj_get_scroll_bottom(uic_train_fn_container) <= 0)
-                        scroll_amount = 0;
-                    if (scroll_amount != 0)
-                    {
-                        lv_obj_scroll_by(uic_train_fn_container, 0, SCROLL_SCALER * scroll_amount,
-                                         LV_ANIM_OFF);
-                    }
-                }
-            }
-
-            uint32_t work_time = (esp_timer_get_time() / 1000) - lock_acquired_time;
-            if (work_time > 100)
-            {
-                ESP_LOGW(TAG, "ui_update_task work took %lu ms (lock #%lu)", work_time,
-                         successful_locks);
             }
 
             ui_lvgl_unlock();

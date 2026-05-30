@@ -124,6 +124,23 @@ void TrainFnScreen::load_for_loco()
     }
 }
 
+void TrainFnScreen::on_screen_update(int scroll_amount)
+{
+    if (scroll_amount == 0)
+    {
+        return;
+    }
+    static constexpr float SCROLL_SCALER = 1.5f;
+    if (scroll_amount > 0 && lv_obj_get_scroll_top(uic_train_fn_container) <= 0)
+        scroll_amount = 0;
+    if (scroll_amount < 0 && lv_obj_get_scroll_bottom(uic_train_fn_container) <= 0)
+        scroll_amount = 0;
+    if (scroll_amount != 0)
+    {
+        lv_obj_scroll_by(uic_train_fn_container, 0, SCROLL_SCALER * scroll_amount, LV_ANIM_OFF);
+    }
+}
+
 void TrainFnScreen::on_screen_unloaded()
 {
     // LVGL objects are destroyed with the screen; just reset our tracking state

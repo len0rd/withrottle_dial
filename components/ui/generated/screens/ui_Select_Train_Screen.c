@@ -19,6 +19,18 @@ lv_obj_t * ui_Select_Train_Title_Label = NULL;
 lv_obj_t * ui_Select_Trains_Panel = NULL;
 lv_obj_t * ui_Train_Select_Label2 = NULL;
 // event funtions
+void ui_event_Select_Train_Screen(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_SCREEN_LOADED) {
+        onSelectTrainLoaded(e);
+    }
+    if(event_code == LV_EVENT_SCREEN_UNLOADED) {
+        onSelectTrainUnloaded(e);
+    }
+}
+
 void ui_event_Select_Train_Back_Btn(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -106,6 +118,7 @@ void ui_Select_Train_Screen_screen_init(void)
     lv_obj_set_style_text_font(ui_Train_Select_Label2, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_add_event_cb(ui_Select_Train_Back_Btn, ui_event_Select_Train_Back_Btn, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Select_Train_Screen, ui_event_Select_Train_Screen, LV_EVENT_ALL, NULL);
     uic_Select_Train_Screen = ui_Select_Train_Screen;
     uic_Train_Select_Container = ui_Train_Select_Container;
     uic_Select_Train_Title = ui_Select_Train_Title;

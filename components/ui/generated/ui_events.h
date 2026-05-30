@@ -10,6 +10,8 @@
 extern "C" {
 #endif
 
+void onSelectTrainLoaded(lv_event_t * e);
+void onSelectTrainUnloaded(lv_event_t * e);
 void onTrainMainControlLoaded(lv_event_t * e);
 void onStopClicked(lv_event_t * e);
 void onDirClicked(lv_event_t * e);

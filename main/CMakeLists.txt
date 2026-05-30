@@ -3,6 +3,7 @@ idf_component_register(
         "main.cpp"
         "ui_events.cpp"
         "train_fn_screen.cpp"
+        "train_main_control_screen.cpp"
     INCLUDE_DIRS
         "."
     REQUIRES

@@ -13,6 +13,7 @@ extern "C" {
 // SCREEN: ui_Select_Train_Screen
 extern void ui_Select_Train_Screen_screen_init(void);
 extern void ui_Select_Train_Screen_screen_destroy(void);
+extern void ui_event_Select_Train_Screen(lv_event_t * e);
 extern lv_obj_t * ui_Select_Train_Screen;
 extern lv_obj_t * ui_Train_Select_Container;
 extern lv_obj_t * ui_Select_Train_Title;

@@ -29,3 +29,13 @@ void onTrainFnUnloaded(lv_event_t * e)
 {
 	// Your code here
 }
+
+void onSelectTrainLoaded(lv_event_t * e)
+{
+	// Your code here
+}
+
+void onSelectTrainUnloaded(lv_event_t * e)
+{
+	// Your code here
+}
